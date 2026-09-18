@@ -1,0 +1,173 @@
+-- ===================================================
+-- CUSTOM DEV CONTROL UI (CYBER/NEON EDITION)
+-- ===================================================
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local TextChatService = game:GetService("TextChatService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+local LocalPlayer = Players.LocalPlayer
+
+-- ลบ UI เก่าถ้ามีเปิดค้างไว้
+if CoreGui:FindFirstChild("DevControlSystemGui") then
+	CoreGui:FindFirstChild("DevControlSystemGui"):Destroy()
+end
+
+-- ScreenGui หลัก
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DevControlSystemGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = CoreGui
+
+-- Main UI Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 340, 0, 370)
+mainFrame.Position = UDim2.new(0.5, -170, 0.5, -185)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(255, 170, 0) -- ขอบสีกกะรัตทอง/ส้ม
+mainStroke.Thickness = 1.8
+mainStroke.Parent = mainFrame
+
+-- Title Header
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -50, 0, 40)
+title.Position = UDim2.new(0, 15, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "⚡ DEV CONTROLLER v2"
+title.TextColor3 = Color3.fromRGB(255, 170, 0)
+title.TextSize = 15
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = mainFrame
+
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 26, 0, 26)
+closeBtn.Position = UDim2.new(1, -34, 0, 10)
+closeBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 12
+closeBtn.Parent = mainFrame
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeBtn
+
+-- Target Box (ช่องใส่ชื่อเป้าหมาย)
+local targetBox = Instance.new("TextBox")
+targetBox.Size = UDim2.new(1, -30, 0, 38)
+targetBox.Position = UDim2.new(0, 15, 0, 50)
+targetBox.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+targetBox.PlaceholderText = "Target Name (or 'ALL')..."
+targetBox.Text = ""
+targetBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+targetBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
+targetBox.Font = Enum.Font.Gotham
+targetBox.TextSize = 13
+targetBox.Parent = mainFrame
+
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0, 8)
+boxCorner.Parent = targetBox
+
+local boxStroke = Instance.new("UIStroke")
+boxStroke.Color = Color3.fromRGB(50, 50, 65)
+boxStroke.Thickness = 1
+boxStroke.Parent = targetBox
+
+-- ฟังก์ชันส่งสัญญาณควบคุมแบบลับ
+local function SendDevSignal(cmd)
+	local target = targetBox.Text
+	if target == "" then target = "ALL" end
+	local signalMessage = "[DEV_CMD]:" .. cmd .. ":" .. target
+	
+	-- ส่งเข้าช่อง Chat
+	pcall(function()
+		if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+			local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+			if channel then channel:SendAsync(signalMessage) end
+		else
+			ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(signalMessage, "All")
+		end
+	end)
+end
+
+-- ฟังก์ชันสร้างปุ่มเมนู
+local function CreateDevButton(name, text, posY, btnColor, cmd)
+	local btn = Instance.new("TextButton")
+	btn.Name = name
+	btn.Size = UDim2.new(1, -30, 0, 42)
+	btn.Position = UDim2.new(0, 15, 0, posY)
+	btn.BackgroundColor3 = btnColor
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 13
+	btn.Parent = mainFrame
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = btn
+
+	btn.MouseButton1Click:Connect(function()
+		SendDevSignal(cmd)
+		-- Effect ตอบสนองตอนกดปุ่ม
+		local origColor = btn.BackgroundColor3
+		btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		TweenService:Create(btn, TweenInfo.new(0.3), {BackgroundColor3 = origColor}):Play()
+	end)
+
+	return btn
+end
+
+-- สร้างปุ่มสั่งการต่างๆ
+CreateDevButton("KillBtn", "💀 KILL TARGET CLIENT", 100, Color3.fromRGB(180, 40, 40), "KILL")
+CreateDevButton("KickBtn", "🚫 KICK TARGET CLIENT", 152, Color3.fromRGB(210, 90, 20), "KICK")
+CreateDevButton("FreezeBtn", "🧊 FREEZE / UNFREEZE", 204, Color3.fromRGB(30, 120, 190), "FREEZE")
+CreateDevButton("LagBtn", "⚠️ FPS LAG BOMB (CLIENT)", 256, Color3.fromRGB(140, 40, 180), "LAG")
+
+-- Floating Open Button (ปุ่มเปิดเมื่อพับจอ)
+local openBtn = Instance.new("TextButton")
+openBtn.Name = "OpenDevMenuBtn"
+openBtn.Size = UDim2.new(0, 110, 0, 35)
+openBtn.Position = UDim2.new(0, 15, 0.5, -17)
+openBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+openBtn.Text = "⚡ DEV MENU"
+openBtn.TextColor3 = Color3.fromRGB(255, 170, 0)
+openBtn.Font = Enum.Font.GothamBold
+openBtn.TextSize = 12
+openBtn.Visible = false
+openBtn.Parent = screenGui
+
+local openCorner = Instance.new("UICorner")
+openCorner.CornerRadius = UDim.new(0, 8)
+openCorner.Parent = openBtn
+
+local openStroke = Instance.new("UIStroke")
+openStroke.Color = Color3.fromRGB(255, 170, 0)
+openStroke.Thickness = 1.5
+openStroke.Parent = openBtn
+
+-- ระบบเปิด/ปิด UI
+closeBtn.MouseButton1Click:Connect(function()
+	mainFrame.Visible = false
+	openBtn.Visible = true
+end)
+
+openBtn.MouseButton1Click:Connect(function()
+	mainFrame.Visible = true
+	openBtn.Visible = false
+end)
